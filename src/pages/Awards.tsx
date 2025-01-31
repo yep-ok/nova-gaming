@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Award, Search, Home, ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,6 +37,16 @@ export default function Awards() {
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Fetch user session
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    },
+  });
 
   // Fetch accepted awards
   const { data: awards } = useQuery({
@@ -58,7 +68,6 @@ export default function Awards() {
     queryFn: async () => {
       if (!expandedAward) return null;
 
-      const { data: user } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("nominees")
         .select(`
@@ -70,13 +79,16 @@ export default function Awards() {
 
       if (error) throw error;
 
-      // Get user's votes
-      const { data: userVotes } = await supabase
-        .from("nominee_votes")
-        .select("nominee_id")
-        .eq("voter_id", user.user?.id || '');
+      // Get user's votes only if authenticated
+      let userVotedNominees = new Set<string>();
+      if (session?.user) {
+        const { data: userVotes } = await supabase
+          .from("nominee_votes")
+          .select("nominee_id")
+          .eq("voter_id", session.user.id);
 
-      const userVotedNominees = new Set(userVotes?.map(vote => vote.nominee_id));
+        userVotedNominees = new Set(userVotes?.map(vote => vote.nominee_id) || []);
+      }
 
       // Transform the data to match NomineeData interface
       return data?.map(nominee => ({
@@ -120,15 +132,17 @@ export default function Awards() {
   // Mutation to vote for a nominee
   const voteMutation = useMutation({
     mutationFn: async ({ nomineeId, isVoting }: { nomineeId: string; isVoting: boolean }) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
+      if (!session?.user) {
+        navigate("/auth");
+        throw new Error("Not authenticated");
+      }
 
       if (isVoting) {
         const { error } = await supabase
           .from("nominee_votes")
           .insert({
             nominee_id: nomineeId,
-            voter_id: user.user.id,
+            voter_id: session.user.id,
           });
 
         if (error) throw error;
@@ -137,7 +151,7 @@ export default function Awards() {
           .from("nominee_votes")
           .delete()
           .eq("nominee_id", nomineeId)
-          .eq("voter_id", user.user.id);
+          .eq("voter_id", session.user.id);
 
         if (error) throw error;
       }
@@ -152,18 +166,31 @@ export default function Awards() {
       });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to process vote. Please try again.",
-        variant: "destructive",
-      });
-      console.error("Error processing vote:", error);
+      if (error instanceof Error && error.message === "Not authenticated") {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to vote for nominees.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to process vote. Please try again.",
+          variant: "destructive",
+        });
+        console.error("Error processing vote:", error);
+      }
     },
   });
 
   // Mutation to nominate a new user
   const nominateMutation = useMutation({
     mutationFn: async (userId: string) => {
+      if (!session?.user) {
+        navigate("/auth");
+        throw new Error("Not authenticated");
+      }
+
       if (!expandedAward) throw new Error("No award selected");
 
       const { error } = await supabase
@@ -183,6 +210,21 @@ export default function Awards() {
         title: "Nominee added",
         description: "The user has been successfully nominated.",
       });
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message === "Not authenticated") {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to nominate users.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add nominee. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
