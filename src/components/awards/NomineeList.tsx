@@ -21,16 +21,16 @@ export function NomineeList({ nominees, onVote }: NomineeListProps) {
       {nominees?.map((nominee) => (
         <Card
           key={nominee.id}
-          className={`cursor-pointer transition-colors ${
+          className={`cursor-pointer transition-all ${
             nominee.has_voted 
-              ? "bg-accent/50 hover:bg-accent/60" 
+              ? "bg-primary/20 hover:bg-primary/30 border-primary shadow-lg transform hover:-translate-y-1" 
               : "hover:bg-accent"
           }`}
           onClick={() => onVote(nominee.id, !nominee.has_voted)}
         >
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">
+              <CardTitle className={`text-lg ${nominee.has_voted ? "text-primary" : ""}`}>
                 {nominee.nominee.discord_username}
               </CardTitle>
               <div className="flex items-center gap-2">

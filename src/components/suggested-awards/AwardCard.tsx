@@ -16,16 +16,18 @@ interface AwardCardProps {
 export function AwardCard({ award, onClick }: AwardCardProps) {
   return (
     <Card
-      className={`cursor-pointer transition-colors ${
+      className={`cursor-pointer transition-all ${
         award.has_voted 
-          ? "bg-accent/50 hover:bg-accent/60" 
+          ? "bg-primary/20 hover:bg-primary/30 border-primary shadow-lg transform hover:-translate-y-1" 
           : "hover:bg-accent"
       }`}
       onClick={onClick}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>{award.name}</CardTitle>
+          <CardTitle className={award.has_voted ? "text-primary" : ""}>
+            {award.name}
+          </CardTitle>
           <CardDescription>
             {award._count.votes} / 3 votes
           </CardDescription>

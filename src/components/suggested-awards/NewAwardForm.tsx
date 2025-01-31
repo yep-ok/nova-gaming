@@ -36,7 +36,8 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
 
   const createAwardMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase
+      // First create the award
+      const { data: newAward, error: awardError } = await supabase
         .from("awards")
         .insert({
           name: newAwardName,
@@ -44,10 +45,22 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
           created_by: userId,
           status: "suggested"
         })
-        .select();
+        .select()
+        .single();
 
-      if (error) throw error;
-      return data;
+      if (awardError) throw awardError;
+
+      // Then automatically vote for it
+      const { error: voteError } = await supabase
+        .from("award_votes")
+        .insert({
+          award_id: newAward.id,
+          voter_id: userId,
+        });
+
+      if (voteError) throw voteError;
+
+      return newAward;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suggestedAwards"] });
@@ -56,7 +69,7 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
       setNewAwardDescription("");
       toast({
         title: "Award suggested",
-        description: "Your award has been successfully suggested.",
+        description: "Your award has been successfully suggested and received your vote.",
       });
     },
     onError: (error: Error) => {
