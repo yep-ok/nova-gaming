@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface AwardData {
   id: string;
@@ -62,14 +62,20 @@ export default function Awards() {
         .select(`
           id,
           nominee:nominee_id(id, discord_username),
-          _count {
-            votes: nominee_votes(count)
-          }
+          nominee_votes(count)
         `)
         .eq("award_id", expandedAward);
 
       if (error) throw error;
-      return data as NomineeData[];
+
+      // Transform the data to match NomineeData interface
+      return data?.map(nominee => ({
+        id: nominee.id,
+        nominee: nominee.nominee,
+        _count: {
+          votes: nominee.nominee_votes?.[0]?.count || 0
+        }
+      })) as NomineeData[];
     },
     enabled: !!expandedAward,
   });
