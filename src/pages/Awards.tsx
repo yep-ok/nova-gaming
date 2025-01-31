@@ -55,7 +55,7 @@ export default function Awards() {
         .from("awards")
         .select("id, name, description, created_at, accepted_at")
         .eq("status", "accepted")
-        .order('accepted_at', { ascending: false, nullsLast: true });
+        .order('accepted_at', { ascending: false });
 
       if (error) throw error;
       return data as AwardData[];
