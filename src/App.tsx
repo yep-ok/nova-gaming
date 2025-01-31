@@ -1,28 +1,22 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Index from "./pages/Index";
-import Awards from "./pages/Awards";
-import Messages from "./pages/Messages";
-import SuggestedAwards from "./pages/SuggestedAwards";
-import NotFound from "./pages/NotFound";
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/toaster";
+import { AppRoutes } from "@/routes";
 import "./App.css";
 
-// Create a client
 const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/awards" element={<Awards />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/suggested-awards" element={<SuggestedAwards />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="dark" attribute="class">
+          <AppRoutes />
+          <Toaster />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 
