@@ -65,9 +65,7 @@ export default function FeatureRequests() {
           content,
           created_at,
           author:author_id(discord_username),
-          _count {
-            votes:feature_request_votes(count)
-          }
+          votes:feature_request_votes(count)
         `)
         .order("created_at", { ascending: false });
 
@@ -83,8 +81,12 @@ export default function FeatureRequests() {
 
       const votedIds = new Set(votes?.map(v => v.feature_request_id));
 
-      return (data as FeatureRequest[]).map(request => ({
+      // Transform the data to match the FeatureRequest interface
+      return (data as any[]).map(request => ({
         ...request,
+        _count: {
+          votes: request.votes.length || 0
+        },
         has_voted: votedIds.has(request.id)
       }));
     },
