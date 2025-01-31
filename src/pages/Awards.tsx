@@ -203,7 +203,7 @@ export default function Awards() {
   const voteMutation = useMutation({
     mutationFn: async ({ nomineeId, isVoting }: { nomineeId: string; isVoting: boolean }) => {
       if (!session?.user) {
-        navigate("/auth");
+        navigate("/");
         throw new Error("Not authenticated");
       }
 
@@ -268,7 +268,7 @@ export default function Awards() {
   const nominateMutation = useMutation({
     mutationFn: async (userId: string) => {
       if (!session?.user) {
-        navigate("/auth");
+        navigate("/");
         throw new Error("Not authenticated");
       }
 

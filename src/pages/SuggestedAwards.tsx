@@ -30,6 +30,9 @@ export default function SuggestedAwards() {
     queryKey: ["session"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/");
+      }
       return session;
     },
   });
@@ -113,7 +116,7 @@ export default function SuggestedAwards() {
   const toggleVoteMutation = useMutation({
     mutationFn: async (awardId: string) => {
       if (!session?.user) {
-        navigate("/auth");
+        navigate("/");
         throw new Error("Not authenticated");
       }
 
