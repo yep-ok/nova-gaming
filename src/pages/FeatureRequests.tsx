@@ -83,9 +83,12 @@ export default function FeatureRequests() {
 
       // Transform the data to match the FeatureRequest interface
       return (data as any[]).map(request => ({
-        ...request,
+        id: request.id,
+        content: request.content,
+        created_at: request.created_at,
+        author: request.author,
         _count: {
-          votes: request.votes.length || 0
+          votes: request.votes[0]?.count || 0
         },
         has_voted: votedIds.has(request.id)
       }));
