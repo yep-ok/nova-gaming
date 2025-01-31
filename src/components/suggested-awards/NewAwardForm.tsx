@@ -23,16 +23,24 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
 
   const createAwardMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("awards")
         .insert({
           name: newAwardName,
           description: newAwardDescription,
           created_by: userId,
           status: "suggested"
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error("An award with this name already exists");
+        }
+        throw error;
+      }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suggestedAwards"] });
@@ -44,23 +52,19 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
         description: "Your award has been successfully suggested.",
       });
     },
-    onError: (error) => {
-      if (error instanceof Error) {
-        // Check for unique constraint violation
-        const message = (error as any).message;
-        if (message && message.includes('unique constraint "unique_award_name"')) {
-          toast({
-            title: "Error",
-            description: "An award with this name already exists. Please choose a different name.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to suggest award. Please try again.",
-            variant: "destructive",
-          });
-        }
+    onError: (error: Error) => {
+      if (error.message === "An award with this name already exists") {
+        toast({
+          title: "Error",
+          description: "An award with this name already exists. Please choose a different name.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to suggest award. Please try again.",
+          variant: "destructive",
+        });
         console.error("Error creating award:", error);
       }
     },
