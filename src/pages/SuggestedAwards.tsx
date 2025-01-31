@@ -25,14 +25,10 @@ export default function SuggestedAwards() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check authentication
   const { data: session } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/");
-      }
       return session;
     },
   });

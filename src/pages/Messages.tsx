@@ -41,6 +41,14 @@ export default function Messages() {
     }
   };
 
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    },
+  });
+
   // Fetch messages
   const { data: messages } = useQuery({
     queryKey: ["messages"],

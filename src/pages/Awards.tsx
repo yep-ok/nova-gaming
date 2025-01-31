@@ -38,7 +38,6 @@ export default function Awards() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch user session
   const { data: session } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
@@ -47,7 +46,6 @@ export default function Awards() {
     },
   });
 
-  // Set up real-time subscriptions
   useEffect(() => {
     // Subscribe to awards changes
     const awardsChannel = supabase
