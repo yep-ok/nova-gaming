@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Award, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-
-// This is for development/preview purposes only
-const BYPASS_AUTH = true;
-const TEST_USER_ID = "0f5f9855-d661-4169-a86c-30a99da9c1fd";
 
 const fetchLatestAward = async () => {
   const { data, error } = await supabase
@@ -36,6 +32,7 @@ const fetchLatestMessage = async () => {
 
 const Index = () => {
   const [session, setSession] = useState<any>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -54,16 +51,16 @@ const Index = () => {
   const { data: latestAward } = useQuery({
     queryKey: ["latestAward"],
     queryFn: fetchLatestAward,
-    enabled: BYPASS_AUTH || !!session,
+    enabled: !!session,
   });
 
   const { data: latestMessage } = useQuery({
     queryKey: ["latestMessage"],
     queryFn: fetchLatestMessage,
-    enabled: BYPASS_AUTH || !!session,
+    enabled: !!session,
   });
 
-  if (!BYPASS_AUTH && !session) {
+  if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <motion.div
