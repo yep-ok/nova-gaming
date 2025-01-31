@@ -17,6 +17,7 @@ interface SuggestedAward {
   _count: {
     votes: number;
   };
+  has_voted?: boolean;
 }
 
 export default function SuggestedAwards() {
@@ -36,11 +37,13 @@ export default function SuggestedAwards() {
     },
   });
 
-  // Fetch suggested awards
+  // Fetch suggested awards and user votes
   const { data: suggestedAwards } = useQuery({
     queryKey: ["suggestedAwards"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!session?.user) return [];
+
+      const { data: awards, error: awardsError } = await supabase
         .from("awards")
         .select(`
           id,
@@ -50,17 +53,29 @@ export default function SuggestedAwards() {
         `)
         .eq("status", "suggested");
 
-      if (error) throw error;
+      if (awardsError) throw awardsError;
 
-      return data?.map(award => ({
+      // Fetch user's votes
+      const { data: userVotes, error: votesError } = await supabase
+        .from("award_votes")
+        .select("award_id")
+        .eq("voter_id", session.user.id);
+
+      if (votesError) throw votesError;
+
+      const userVotedAwards = new Set(userVotes?.map(vote => vote.award_id));
+
+      return awards?.map(award => ({
         id: award.id,
         name: award.name,
         description: award.description,
         _count: {
           votes: award.award_votes?.[0]?.count || 0
-        }
+        },
+        has_voted: userVotedAwards.has(award.id)
       })) as SuggestedAward[];
     },
+    enabled: !!session?.user,
   });
 
   // Create new award mutation
@@ -125,7 +140,16 @@ export default function SuggestedAwards() {
           voter_id: session.user.id,
         });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Already voted",
+            description: "You have already voted for this award.",
+          });
+          return;
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suggestedAwards"] });
@@ -141,14 +165,14 @@ export default function SuggestedAwards() {
           description: "Please log in to vote for awards.",
           variant: "destructive",
         });
-      } else {
+      } else if (error.code !== '23505') {
         toast({
           title: "Error",
           description: "Failed to record vote. Please try again.",
           variant: "destructive",
         });
+        console.error("Error voting for award:", error);
       }
-      console.error("Error voting for award:", error);
     },
   });
 
@@ -241,8 +265,12 @@ export default function SuggestedAwards() {
         {suggestedAwards?.map((award) => (
           <Card
             key={award.id}
-            className="cursor-pointer hover:bg-accent transition-colors"
-            onClick={() => voteForAwardMutation.mutate(award.id)}
+            className={`cursor-pointer transition-colors ${
+              award.has_voted 
+                ? "bg-accent/50 hover:bg-accent/60" 
+                : "hover:bg-accent"
+            }`}
+            onClick={() => !award.has_voted && voteForAwardMutation.mutate(award.id)}
           >
             <CardHeader>
               <div className="flex items-center justify-between">
