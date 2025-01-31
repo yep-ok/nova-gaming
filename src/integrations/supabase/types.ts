@@ -9,7 +9,199 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      award_votes: {
+        Row: {
+          award_id: string
+          created_at: string
+          id: string
+          voter_id: string
+        }
+        Insert: {
+          award_id: string
+          created_at?: string
+          id?: string
+          voter_id: string
+        }
+        Update: {
+          award_id?: string
+          created_at?: string
+          id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "award_votes_award_id_fkey"
+            columns: ["award_id"]
+            isOneToOne: false
+            referencedRelation: "awards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "award_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      awards: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["award_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["award_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["award_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "awards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nominee_votes: {
+        Row: {
+          created_at: string
+          id: string
+          nominee_id: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nominee_id: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nominee_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nominee_votes_nominee_id_fkey"
+            columns: ["nominee_id"]
+            isOneToOne: false
+            referencedRelation: "nominees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nominee_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nominees: {
+        Row: {
+          award_id: string
+          created_at: string
+          id: string
+          nominee_id: string
+        }
+        Insert: {
+          award_id: string
+          created_at?: string
+          id?: string
+          nominee_id: string
+        }
+        Update: {
+          award_id?: string
+          created_at?: string
+          id?: string
+          nominee_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nominees_award_id_fkey"
+            columns: ["award_id"]
+            isOneToOne: false
+            referencedRelation: "awards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nominees_nominee_id_fkey"
+            columns: ["nominee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          discord_username: string
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          discord_username: string
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          discord_username?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
