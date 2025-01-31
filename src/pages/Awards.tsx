@@ -395,3 +395,4 @@ export default function Awards() {
       </div>
     </div>
   );
+}
