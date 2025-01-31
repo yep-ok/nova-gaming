@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Award, MessageSquare, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
@@ -36,6 +36,7 @@ const Index = () => {
   const [session, setSession] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -57,16 +58,26 @@ const Index = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      // Check for redirect parameter and navigate if user is logged in
+      const redirectTo = searchParams.get("redirect");
+      if (session && redirectTo) {
+        navigate(redirectTo);
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      // Check for redirect parameter and navigate if user is logged in
+      const redirectTo = searchParams.get("redirect");
+      if (session && redirectTo) {
+        navigate(redirectTo);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate, searchParams]);
 
   const { data: latestAward } = useQuery({
     queryKey: ["latestAward"],
@@ -99,7 +110,7 @@ const Index = () => {
             onClick={() => supabase.auth.signInWithOAuth({
               provider: 'discord',
               options: {
-                redirectTo: window.location.origin
+                redirectTo: window.location.origin + (searchParams.get("redirect") ? `?redirect=${searchParams.get("redirect")}` : "")
               }
             })}
             className="bg-[#5865F2] text-white px-6 py-2 rounded-md hover:bg-[#4752C4] transition-colors"

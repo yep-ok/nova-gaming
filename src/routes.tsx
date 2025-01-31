@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
@@ -8,6 +8,7 @@ import SuggestedAwards from "./pages/SuggestedAwards";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   const { data: session } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
@@ -17,7 +18,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   });
 
   if (!session) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={`/?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   return <>{children}</>;
