@@ -88,7 +88,7 @@ export default function FeatureRequests() {
         created_at: request.created_at,
         author: request.author,
         _count: {
-          votes: request.votes[0]?.count || 0
+          votes: request.votes[0]?.count ?? 0
         },
         has_voted: votedIds.has(request.id)
       }));
