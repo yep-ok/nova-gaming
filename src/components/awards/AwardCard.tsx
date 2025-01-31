@@ -43,27 +43,17 @@ export function AwardCard({
   onNominate,
   onVote,
 }: AwardCardProps) {
-  // Find the nominee with the most votes
-  const topNominee = nominees?.sort((a, b) => b._count.votes - a._count.votes)[0];
-
   return (
     <Card className="overflow-hidden">
       <CardHeader
-        className="cursor-pointer space-y-3"
+        className="cursor-pointer"
         onClick={onToggleExpand}
       >
         <div className="flex items-center justify-between">
-          <div className="space-y-1.5">
-            <CardTitle>{award.name}</CardTitle>
-            <CardDescription>{award.description}</CardDescription>
-            {topNominee && !isExpanded && (
-              <p className="text-sm font-medium text-primary">
-                Leading: {topNominee.nominee.discord_username} ({topNominee._count.votes} votes)
-              </p>
-            )}
-          </div>
+          <CardTitle>{award.name}</CardTitle>
           {isExpanded ? <ChevronUp /> : <ChevronDown />}
         </div>
+        <CardDescription>{award.description}</CardDescription>
       </CardHeader>
 
       <AnimatePresence>
@@ -83,7 +73,7 @@ export function AwardCard({
                 onNominate={onNominate}
               />
               <NomineeList
-                nominees={nominees?.sort((a, b) => b._count.votes - a._count.votes) || []}
+                nominees={nominees || []}
                 onVote={onVote}
               />
             </CardContent>
