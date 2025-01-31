@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { NomineeSearch } from "./NomineeSearch";
 import { NomineeList } from "./NomineeList";
+import { useEffect, useRef } from "react";
 
 interface AwardCardProps {
   award: {
@@ -43,8 +44,20 @@ export function AwardCard({
   onNominate,
   onVote,
 }: AwardCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isExpanded && cardRef.current) {
+      const yOffset = -20; // Add some padding at the top
+      const element = cardRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  }, [isExpanded]);
+
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden" ref={cardRef}>
       <CardHeader
         className="cursor-pointer"
         onClick={onToggleExpand}
