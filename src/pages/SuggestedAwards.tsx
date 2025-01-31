@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { PostgrestError } from "@supabase/supabase-js";
 
 interface SuggestedAward {
   id: string;
@@ -108,20 +109,22 @@ export default function SuggestedAwards() {
       });
     },
     onError: (error) => {
-      if (error.message === "Not authenticated") {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to suggest awards.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to suggest award. Please try again.",
-          variant: "destructive",
-        });
+      if (error instanceof Error) {
+        if (error.message === "Not authenticated") {
+          toast({
+            title: "Authentication required",
+            description: "Please log in to suggest awards.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to suggest award. Please try again.",
+            variant: "destructive",
+          });
+        }
+        console.error("Error creating award:", error);
       }
-      console.error("Error creating award:", error);
     },
   });
 
@@ -140,16 +143,7 @@ export default function SuggestedAwards() {
           voter_id: session.user.id,
         });
 
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "Already voted",
-            description: "You have already voted for this award.",
-          });
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suggestedAwards"] });
@@ -158,19 +152,30 @@ export default function SuggestedAwards() {
         description: "Your vote has been successfully recorded.",
       });
     },
-    onError: (error) => {
-      if (error.message === "Not authenticated") {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to vote for awards.",
-          variant: "destructive",
-        });
-      } else if (error.code !== '23505') {
-        toast({
-          title: "Error",
-          description: "Failed to record vote. Please try again.",
-          variant: "destructive",
-        });
+    onError: (error: Error | PostgrestError) => {
+      if (error instanceof Error) {
+        if (error.message === "Not authenticated") {
+          toast({
+            title: "Authentication required",
+            description: "Please log in to vote for awards.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Handle PostgrestError
+        if ((error as PostgrestError).code === '23505') {
+          toast({
+            title: "Already voted",
+            description: "You have already voted for this award.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to record vote. Please try again.",
+            variant: "destructive",
+          });
+        }
         console.error("Error voting for award:", error);
       }
     },
