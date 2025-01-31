@@ -71,7 +71,12 @@ export default function FeatureRequests() {
 
       if (error) throw error;
 
-      if (!user) return data as FeatureRequest[];
+      if (!user) return (data as any[]).map(request => ({
+        ...request,
+        _count: {
+          votes: request.votes[0]?.count ?? 0
+        }
+      }));
 
       // Get user's votes
       const { data: votes } = await supabase
