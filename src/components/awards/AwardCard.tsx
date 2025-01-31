@@ -53,7 +53,7 @@ export function AwardCard({
         onClick={onToggleExpand}
       >
         <div className="flex items-center justify-between">
-          <div className="space-y-1.5">
+          <div>
             <CardTitle>{award.name}</CardTitle>
             <CardDescription>{award.description}</CardDescription>
             {topNominee && (
