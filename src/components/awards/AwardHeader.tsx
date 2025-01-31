@@ -1,50 +1,31 @@
-import { Link, useNavigate } from "react-router-dom";
-import { Award, Home, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Trophy, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AwardHeader() {
   const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out.",
-      });
-      navigate("/");
-    }
-  };
+  const isMobile = useIsMobile();
 
   return (
-    <div className="flex justify-between items-center">
-      <div className="flex gap-4">
-        <Button asChild variant="outline">
-          <Link to="/">
-            <Home className="mr-2" />
-            Home
-          </Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link to="/suggested-awards">
-            <Award className="mr-2" />
-            Suggested Awards
-          </Link>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-[#1A1F2C] flex items-center gap-2">
+          <Trophy className="size-6 text-[#FF4500]" />
+          {!isMobile && "Awards"}
+        </h1>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/suggested-awards")}
+          className="gap-2"
+        >
+          <PlusCircle />
+          {!isMobile && "Suggest Award"}
         </Button>
       </div>
-      <Button variant="outline" onClick={handleLogout}>
-        <LogOut className="mr-2" />
-        Sign out
-      </Button>
+      <p className="text-[#8E9196]">
+        Vote for your favorite community members in these categories!
+      </p>
     </div>
   );
 }
