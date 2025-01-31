@@ -35,25 +35,32 @@ const fetchLatestMessage = async () => {
 
 const Index = () => {
   const [session, setSession] = useState<any>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
-    } else {
+    try {
+      setIsLoggingOut(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       toast({
         title: "Signed out",
         description: "You have been successfully signed out.",
       });
       navigate("/");
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -134,10 +141,11 @@ const Index = () => {
           <Button 
             variant="ghost" 
             onClick={handleLogout}
+            disabled={isLoggingOut}
             className="text-[#555555] hover:text-[#222222] hover:bg-[#E5E5E5] w-full md:w-auto"
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Sign out
+            {isLoggingOut ? "Signing out..." : "Sign out"}
           </Button>
         </div>
         
