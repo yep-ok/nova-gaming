@@ -16,9 +16,12 @@ interface NomineeListProps {
 }
 
 export function NomineeList({ nominees, onVote }: NomineeListProps) {
+  // Sort nominees by vote count (highest to lowest)
+  const sortedNominees = [...nominees].sort((a, b) => b._count.votes - a._count.votes);
+
   return (
     <div className="grid gap-2">
-      {nominees?.map((nominee) => (
+      {sortedNominees.map((nominee) => (
         <Card
           key={nominee.id}
           className={`cursor-pointer transition-all ${
