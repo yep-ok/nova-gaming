@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Award, Search, Home, ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { AwardHeader } from "@/components/awards/AwardHeader";
+import { AwardCard } from "@/components/awards/AwardCard";
 
 interface AwardData {
   id: string;
@@ -63,7 +60,7 @@ export default function Awards() {
   });
 
   // Fetch nominees for an award
-  const { data: nominees, isLoading: nomineesLoading } = useQuery({
+  const { data: nominees } = useQuery({
     queryKey: ["nominees", expandedAward],
     queryFn: async () => {
       if (!expandedAward) return null;
@@ -90,7 +87,6 @@ export default function Awards() {
         userVotedNominees = new Set(userVotes?.map(vote => vote.nominee_id) || []);
       }
 
-      // Transform the data to match NomineeData interface
       return data?.map(nominee => ({
         id: nominee.id,
         nominee: nominee.nominee,
@@ -137,9 +133,7 @@ export default function Awards() {
       .from("nominee_votes")
       .select("nominee_id")
       .eq("voter_id", session.user.id)
-      .in("nominee_id", 
-        nominees?.map(n => n.id) || []
-      );
+      .in("nominee_id", nominees?.map(n => n.id) || []);
 
     return existingVotes && existingVotes.length > 0;
   };
@@ -153,7 +147,6 @@ export default function Awards() {
       }
 
       if (isVoting) {
-        // Check if user has already voted for another nominee in this award
         const hasExistingVote = await checkExistingVote(expandedAward!);
         if (hasExistingVote) {
           throw new Error("already_voted");
@@ -206,7 +199,6 @@ export default function Awards() {
             description: "Failed to process vote. Please try again.",
             variant: "destructive",
           });
-          console.error("Error processing vote:", error);
         }
       }
     },
@@ -222,13 +214,11 @@ export default function Awards() {
 
       if (!expandedAward) throw new Error("No award selected");
 
-      // Check if user has already voted for another nominee in this award
       const hasExistingVote = await checkExistingVote(expandedAward);
       if (hasExistingVote) {
         throw new Error("already_voted");
       }
 
-      // First create the nomination
       const { data: newNominee, error: nominationError } = await supabase
         .from("nominees")
         .insert({
@@ -240,7 +230,6 @@ export default function Awards() {
 
       if (nominationError) throw nominationError;
 
-      // Then automatically vote for the new nominee
       const { error: voteError } = await supabase
         .from("nominee_votes")
         .insert({
@@ -286,111 +275,22 @@ export default function Awards() {
 
   return (
     <div className="container py-8 space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-4">
-          <Button asChild variant="outline">
-            <Link to="/">
-              <Home className="mr-2" />
-              Home
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/suggested-awards">
-              <Award className="mr-2" />
-              Suggested Awards
-            </Link>
-          </Button>
-        </div>
-      </div>
-
+      <AwardHeader />
+      
       <div className="grid gap-4">
         {awards?.map((award) => (
-          <Card key={award.id} className="overflow-hidden">
-            <CardHeader
-              className="cursor-pointer"
-              onClick={() => setExpandedAward(expandedAward === award.id ? null : award.id)}
-            >
-              <div className="flex items-center justify-between">
-                <CardTitle>{award.name}</CardTitle>
-                {expandedAward === award.id ? <ChevronUp /> : <ChevronDown />}
-              </div>
-              <CardDescription>{award.description}</CardDescription>
-            </CardHeader>
-
-            <AnimatePresence>
-              {expandedAward === award.id && (
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: "auto" }}
-                  exit={{ height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <CardContent className="space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search users to nominate..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9"
-                      />
-                      {searchQuery && availableUsers && availableUsers.length > 0 && (
-                        <Card className="absolute w-full mt-1 z-10">
-                          <CardContent className="p-2">
-                            {availableUsers.map((user) => (
-                              <Button
-                                key={user.id}
-                                variant="ghost"
-                                className="w-full justify-start"
-                                onClick={() => nominateMutation.mutate(user.id)}
-                              >
-                                {user.discord_username}
-                              </Button>
-                            ))}
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-
-                    <div className="grid gap-2">
-                      {nominees?.map((nominee) => (
-                        <Card
-                          key={nominee.id}
-                          className={`cursor-pointer transition-colors ${
-                            nominee.has_voted 
-                              ? "bg-accent/50 hover:bg-accent/60" 
-                              : "hover:bg-accent"
-                          }`}
-                          onClick={() => voteMutation.mutate({ 
-                            nomineeId: nominee.id, 
-                            isVoting: !nominee.has_voted 
-                          })}
-                        >
-                          <CardHeader>
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">
-                                {nominee.nominee.discord_username}
-                              </CardTitle>
-                              <div className="flex items-center gap-2">
-                                <CardDescription>
-                                  {nominee._count.votes} votes
-                                </CardDescription>
-                                <ThumbsUp 
-                                  className={nominee.has_voted ? "text-primary" : "text-muted-foreground"} 
-                                  size={16}
-                                />
-                              </div>
-                            </div>
-                          </CardHeader>
-                        </Card>
-                      ))}
-                    </div>
-                  </CardContent>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
+          <AwardCard
+            key={award.id}
+            award={award}
+            isExpanded={expandedAward === award.id}
+            onToggleExpand={() => setExpandedAward(expandedAward === award.id ? null : award.id)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            availableUsers={availableUsers}
+            nominees={nominees}
+            onNominate={(userId) => nominateMutation.mutate(userId)}
+            onVote={(nomineeId, isVoting) => voteMutation.mutate({ nomineeId, isVoting })}
+          />
         ))}
       </div>
     </div>
