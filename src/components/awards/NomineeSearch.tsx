@@ -43,6 +43,10 @@ export function NomineeSearch({
     setIsOpen(false);
   };
 
+  const formatUsername = (username: string) => {
+    return username.split('#')[0];
+  };
+
   const showSuggestions = isOpen && availableUsers && availableUsers.length > 0;
 
   return (
@@ -66,7 +70,7 @@ export function NomineeSearch({
                   className="w-full justify-start text-[#1A1F2C] hover:bg-[#FF4500]/10"
                   onClick={() => handleNominate(user.id)}
                 >
-                  {user.discord_username}
+                  {formatUsername(user.discord_username)}
                 </Button>
               ))}
             </div>

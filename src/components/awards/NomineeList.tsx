@@ -20,6 +20,10 @@ export function NomineeList({ nominees, onVote }: NomineeListProps) {
   const isMobile = useIsMobile();
   const sortedNominees = [...nominees].sort((a, b) => b._count.votes - a._count.votes);
 
+  const formatUsername = (username: string) => {
+    return username.split('#')[0];
+  };
+
   return (
     <div className="grid gap-2">
       {sortedNominees.map((nominee) => (
@@ -35,7 +39,7 @@ export function NomineeList({ nominees, onVote }: NomineeListProps) {
           <CardHeader className={`p-4 ${isMobile ? 'space-y-1' : 'space-y-2'}`}>
             <div className="flex items-center justify-between gap-2">
               <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'} ${nominee.has_voted ? "text-[#FF4500]" : "text-[#1A1F2C]"}`}>
-                {nominee.nominee.discord_username}
+                {formatUsername(nominee.nominee.discord_username)}
               </CardTitle>
               <div className="flex items-center gap-2">
                 <CardDescription className={nominee.has_voted ? "text-[#FF4500]" : "text-[#8E9196]"}>
