@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const fetchLatestAward = async () => {
   const { data, error } = await supabase
@@ -37,6 +38,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -91,17 +93,17 @@ const Index = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F3F3F3]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F3F3F3] px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center px-4 max-w-2xl w-full"
+          className="text-center w-full max-w-2xl"
         >
-          <h1 className="text-4xl font-light mb-4 text-[#222222]">
+          <h1 className="text-3xl md:text-4xl font-light mb-4 text-[#222222]">
             Welcome to Nova Gaming
           </h1>
-          <p className="text-lg text-[#555555] mb-8">
+          <p className="text-base md:text-lg text-[#555555] mb-8">
             Join our community to participate in awards and discussions
           </p>
           <button
@@ -111,7 +113,7 @@ const Index = () => {
                 redirectTo: window.location.origin + (searchParams.get("redirect") ? `?redirect=${searchParams.get("redirect")}` : "")
               }
             })}
-            className="bg-[#FF4500] text-white px-8 py-3 rounded-full hover:bg-[#FF5722] transition-colors font-semibold text-lg"
+            className="bg-[#FF4500] text-white px-6 md:px-8 py-3 rounded-full hover:bg-[#FF5722] transition-colors font-semibold text-base md:text-lg w-full md:w-auto"
           >
             Login with Discord
           </button>
@@ -121,47 +123,47 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-[#F3F3F3]">
+    <div className="min-h-screen p-4 md:p-8 bg-[#F3F3F3]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-medium text-[#222222]">Nova Gaming</h1>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <h1 className="text-2xl md:text-3xl font-medium text-[#222222]">Nova Gaming</h1>
           <Button 
             variant="ghost" 
             onClick={handleLogout}
-            className="text-[#555555] hover:text-[#222222] hover:bg-[#E5E5E5]"
+            className="text-[#555555] hover:text-[#222222] hover:bg-[#E5E5E5] w-full md:w-auto"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Sign out
           </Button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link to="/awards">
-            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <Link to="/awards" className="block">
+            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white h-full">
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
-                  <Award className="h-6 w-6 text-[#FF4500]" />
-                  <CardTitle className="text-[#222222]">Awards</CardTitle>
+                  <Award className="h-5 md:h-6 w-5 md:w-6 text-[#FF4500]" />
+                  <CardTitle className="text-lg md:text-xl text-[#222222]">Awards</CardTitle>
                 </div>
-                <CardDescription className="text-[#555555]">
+                <CardDescription className="text-sm md:text-base text-[#555555]">
                   {latestAward?.name || "No awards yet"}
                 </CardDescription>
               </CardHeader>
             </Card>
           </Link>
 
-          <Link to="/messages">
-            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white">
+          <Link to="/messages" className="block">
+            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white h-full">
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="h-6 w-6 text-[#FF4500]" />
-                  <CardTitle className="text-[#222222]">Messages</CardTitle>
+                  <MessageSquare className="h-5 md:h-6 w-5 md:w-6 text-[#FF4500]" />
+                  <CardTitle className="text-lg md:text-xl text-[#222222]">Messages</CardTitle>
                 </div>
-                <CardDescription className="text-[#555555]">
+                <CardDescription className="text-sm md:text-base text-[#555555]">
                   {latestMessage?.content || "No messages yet"}
                 </CardDescription>
               </CardHeader>

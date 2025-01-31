@@ -3,6 +3,7 @@ import { Home, Award, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NavigationButtonsProps {
   onNewAward: () => void;
@@ -11,6 +12,7 @@ interface NavigationButtonsProps {
 export function NavigationButtons({ onNewAward }: NavigationButtonsProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -30,29 +32,29 @@ export function NavigationButtons({ onNewAward }: NavigationButtonsProps) {
   };
 
   return (
-    <div className="flex justify-between items-center">
-      <div className="flex gap-4">
-        <Button asChild variant="outline">
+    <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+      <div className="flex flex-col md:flex-row gap-2 md:gap-4 w-full md:w-auto">
+        <Button asChild variant="outline" className="w-full md:w-auto justify-center">
           <Link to="/">
             <Home className="mr-2" />
-            Home
+            {!isMobile && "Home"}
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="w-full md:w-auto justify-center">
           <Link to="/awards">
             <Award className="mr-2" />
-            Accepted Awards
+            {!isMobile && "Accepted Awards"}
           </Link>
         </Button>
       </div>
-      <div className="flex gap-4">
-        <Button onClick={onNewAward}>
+      <div className="flex flex-col md:flex-row gap-2 md:gap-4 w-full md:w-auto">
+        <Button onClick={onNewAward} className="w-full md:w-auto justify-center">
           <Plus className="mr-2" />
-          New Award
+          {!isMobile && "New Award"}
         </Button>
-        <Button variant="outline" onClick={handleLogout}>
+        <Button variant="outline" onClick={handleLogout} className="w-full md:w-auto justify-center">
           <LogOut className="mr-2" />
-          Sign out
+          {!isMobile && "Sign out"}
         </Button>
       </div>
     </div>
