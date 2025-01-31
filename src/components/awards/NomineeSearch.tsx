@@ -57,18 +57,20 @@ export function NomineeSearch({
         className="pl-9 bg-white border-[#E5E7EB] focus:border-[#FF4500] focus:ring-[#FF4500]"
       />
       {showSuggestions && (
-        <Card className="absolute w-full mt-1 z-10 border-[#E5E7EB] max-h-[200px] overflow-y-auto">
-          <CardContent className="p-2">
-            {availableUsers.map((user) => (
-              <Button
-                key={user.id}
-                variant="ghost"
-                className="w-full justify-start text-[#1A1F2C] hover:bg-[#FF4500]/10"
-                onClick={() => handleNominate(user.id)}
-              >
-                {user.discord_username}
-              </Button>
-            ))}
+        <Card className="absolute w-full mt-1 z-10 border-[#E5E7EB]">
+          <CardContent className="p-2 max-h-[240px] overflow-y-auto">
+            <div className="space-y-1">
+              {availableUsers.map((user) => (
+                <Button
+                  key={user.id}
+                  variant="ghost"
+                  className="w-full justify-start text-[#1A1F2C] hover:bg-[#FF4500]/10"
+                  onClick={() => handleNominate(user.id)}
+                >
+                  {user.discord_username}
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
