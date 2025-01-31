@@ -16,7 +16,7 @@ const fetchLatestAward = async () => {
     .select("name")
     .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -28,7 +28,7 @@ const fetchLatestMessage = async () => {
     .select("content")
     .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
