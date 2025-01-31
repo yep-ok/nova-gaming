@@ -129,6 +129,21 @@ export default function Awards() {
     enabled: !!expandedAward && searchQuery.length > 0,
   });
 
+  // Check if user has already voted for this award
+  const checkExistingVote = async (awardId: string) => {
+    if (!session?.user) return false;
+
+    const { data: existingVotes } = await supabase
+      .from("nominee_votes")
+      .select("nominee_id")
+      .eq("voter_id", session.user.id)
+      .in("nominee_id", 
+        nominees?.map(n => n.id) || []
+      );
+
+    return existingVotes && existingVotes.length > 0;
+  };
+
   // Mutation to vote for a nominee
   const voteMutation = useMutation({
     mutationFn: async ({ nomineeId, isVoting }: { nomineeId: string; isVoting: boolean }) => {
@@ -138,6 +153,12 @@ export default function Awards() {
       }
 
       if (isVoting) {
+        // Check if user has already voted for another nominee in this award
+        const hasExistingVote = await checkExistingVote(expandedAward!);
+        if (hasExistingVote) {
+          throw new Error("already_voted");
+        }
+
         const { error } = await supabase
           .from("nominee_votes")
           .insert({
@@ -166,19 +187,27 @@ export default function Awards() {
       });
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "Not authenticated") {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to vote for nominees.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to process vote. Please try again.",
-          variant: "destructive",
-        });
-        console.error("Error processing vote:", error);
+      if (error instanceof Error) {
+        if (error.message === "Not authenticated") {
+          toast({
+            title: "Authentication required",
+            description: "Please log in to vote for nominees.",
+            variant: "destructive",
+          });
+        } else if (error.message === "already_voted") {
+          toast({
+            title: "Vote not allowed",
+            description: "You can only vote for one nominee per award. Please remove your existing vote first.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to process vote. Please try again.",
+            variant: "destructive",
+          });
+          console.error("Error processing vote:", error);
+        }
       }
     },
   });
@@ -193,14 +222,33 @@ export default function Awards() {
 
       if (!expandedAward) throw new Error("No award selected");
 
-      const { error } = await supabase
+      // Check if user has already voted for another nominee in this award
+      const hasExistingVote = await checkExistingVote(expandedAward);
+      if (hasExistingVote) {
+        throw new Error("already_voted");
+      }
+
+      // First create the nomination
+      const { data: newNominee, error: nominationError } = await supabase
         .from("nominees")
         .insert({
           award_id: expandedAward,
           nominee_id: userId,
+        })
+        .select()
+        .single();
+
+      if (nominationError) throw nominationError;
+
+      // Then automatically vote for the new nominee
+      const { error: voteError } = await supabase
+        .from("nominee_votes")
+        .insert({
+          nominee_id: newNominee.id,
+          voter_id: session.user.id,
         });
 
-      if (error) throw error;
+      if (voteError) throw voteError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nominees"] });
@@ -208,22 +256,30 @@ export default function Awards() {
       setSearchQuery("");
       toast({
         title: "Nominee added",
-        description: "The user has been successfully nominated.",
+        description: "The user has been successfully nominated and received your vote.",
       });
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "Not authenticated") {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to nominate users.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add nominee. Please try again.",
-          variant: "destructive",
-        });
+      if (error instanceof Error) {
+        if (error.message === "Not authenticated") {
+          toast({
+            title: "Authentication required",
+            description: "Please log in to nominate users.",
+            variant: "destructive",
+          });
+        } else if (error.message === "already_voted") {
+          toast({
+            title: "Nomination not allowed",
+            description: "You can only vote for one nominee per award. Please remove your existing vote first.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add nominee. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
     },
   });
@@ -339,4 +395,3 @@ export default function Awards() {
       </div>
     </div>
   );
-}
