@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,19 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Query to get existing award names
+  const { data: existingAwards } = useQuery({
+    queryKey: ["existingAwardNames"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("awards")
+        .select("name");
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const createAwardMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase
@@ -33,13 +46,7 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
         })
         .select();
 
-      if (error) {
-        if (error.code === "23505") {
-          throw new Error("An award with this name already exists");
-        }
-        throw error;
-      }
-
+      if (error) throw error;
       return data;
     },
     onSuccess: () => {
@@ -53,20 +60,12 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
       });
     },
     onError: (error: Error) => {
-      if (error.message === "An award with this name already exists") {
-        toast({
-          title: "Error",
-          description: "An award with this name already exists. Please choose a different name.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to suggest award. Please try again.",
-          variant: "destructive",
-        });
-        console.error("Error creating award:", error);
-      }
+      toast({
+        title: "Error",
+        description: "Failed to suggest award. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error creating award:", error);
     },
   });
 
@@ -80,6 +79,21 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
       });
       return;
     }
+
+    // Check for duplicate award name locally
+    const isDuplicate = existingAwards?.some(
+      award => award.name.toLowerCase() === newAwardName.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      toast({
+        title: "Error",
+        description: "An award with this name already exists. Please choose a different name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createAwardMutation.mutate();
   };
 
