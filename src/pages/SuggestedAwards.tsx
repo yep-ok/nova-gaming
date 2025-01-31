@@ -128,28 +128,46 @@ export default function SuggestedAwards() {
     },
   });
 
-  // Vote for award mutation
-  const voteForAwardMutation = useMutation({
+  // Toggle vote mutation (handles both adding and removing votes)
+  const toggleVoteMutation = useMutation({
     mutationFn: async (awardId: string) => {
       if (!session?.user) {
         navigate("/auth");
         throw new Error("Not authenticated");
       }
 
-      const { error } = await supabase
-        .from("award_votes")
-        .insert({
-          award_id: awardId,
-          voter_id: session.user.id,
-        });
+      const award = suggestedAwards?.find(a => a.id === awardId);
+      if (!award) throw new Error("Award not found");
 
-      if (error) throw error;
+      if (award.has_voted) {
+        // Remove vote
+        const { error } = await supabase
+          .from("award_votes")
+          .delete()
+          .eq("award_id", awardId)
+          .eq("voter_id", session.user.id);
+
+        if (error) throw error;
+      } else {
+        // Add vote
+        const { error } = await supabase
+          .from("award_votes")
+          .insert({
+            award_id: awardId,
+            voter_id: session.user.id,
+          });
+
+        if (error) throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, awardId) => {
       queryClient.invalidateQueries({ queryKey: ["suggestedAwards"] });
+      const award = suggestedAwards?.find(a => a.id === awardId);
       toast({
-        title: "Vote recorded",
-        description: "Your vote has been successfully recorded.",
+        title: award?.has_voted ? "Vote removed" : "Vote recorded",
+        description: award?.has_voted 
+          ? "Your vote has been successfully removed." 
+          : "Your vote has been successfully recorded.",
       });
     },
     onError: (error: Error | PostgrestError) => {
@@ -160,24 +178,15 @@ export default function SuggestedAwards() {
             description: "Please log in to vote for awards.",
             variant: "destructive",
           });
-        }
-      } else {
-        // Handle PostgrestError
-        if ((error as PostgrestError).code === '23505') {
-          toast({
-            title: "Already voted",
-            description: "You have already voted for this award.",
-            variant: "destructive",
-          });
         } else {
           toast({
             title: "Error",
-            description: "Failed to record vote. Please try again.",
+            description: "Failed to process vote. Please try again.",
             variant: "destructive",
           });
         }
-        console.error("Error voting for award:", error);
       }
+      console.error("Error processing vote:", error);
     },
   });
 
@@ -275,7 +284,7 @@ export default function SuggestedAwards() {
                 ? "bg-accent/50 hover:bg-accent/60" 
                 : "hover:bg-accent"
             }`}
-            onClick={() => !award.has_voted && voteForAwardMutation.mutate(award.id)}
+            onClick={() => toggleVoteMutation.mutate(award.id)}
           >
             <CardHeader>
               <div className="flex items-center justify-between">
