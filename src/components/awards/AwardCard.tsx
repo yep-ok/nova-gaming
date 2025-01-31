@@ -49,17 +49,17 @@ export function AwardCard({
   return (
     <Card className="overflow-hidden">
       <CardHeader
-        className="cursor-pointer"
+        className="cursor-pointer space-y-3"
         onClick={onToggleExpand}
       >
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1.5">
             <CardTitle>{award.name}</CardTitle>
             <CardDescription>{award.description}</CardDescription>
-            {topNominee && (
-              <CardDescription className="font-medium text-primary">
+            {topNominee && !isExpanded && (
+              <p className="text-sm font-medium text-primary">
                 Leading: {topNominee.nominee.discord_username} ({topNominee._count.votes} votes)
-              </CardDescription>
+              </p>
             )}
           </div>
           {isExpanded ? <ChevronUp /> : <ChevronDown />}
