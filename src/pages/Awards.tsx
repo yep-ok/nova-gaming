@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,69 @@ export default function Awards() {
     },
   });
 
-  // Fetch accepted awards
+  // Set up real-time subscriptions
+  useEffect(() => {
+    // Subscribe to awards changes
+    const awardsChannel = supabase
+      .channel('awards-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'awards' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["acceptedAwards"] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to nominees changes when an award is expanded
+    const nomineesChannel = supabase
+      .channel('nominees-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'nominees' },
+        () => {
+          if (expandedAward) {
+            queryClient.invalidateQueries({ queryKey: ["nominees", expandedAward] });
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to nominee votes changes
+    const nomineeVotesChannel = supabase
+      .channel('nominee-votes-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'nominee_votes' },
+        () => {
+          if (expandedAward) {
+            queryClient.invalidateQueries({ queryKey: ["nominees", expandedAward] });
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to award votes changes
+    const awardVotesChannel = supabase
+      .channel('award-votes-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'award_votes' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["acceptedAwards"] });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions
+    return () => {
+      supabase.removeChannel(awardsChannel);
+      supabase.removeChannel(nomineesChannel);
+      supabase.removeChannel(nomineeVotesChannel);
+      supabase.removeChannel(awardVotesChannel);
+    };
+  }, [queryClient, expandedAward]);
+
   const { data: awards } = useQuery({
     queryKey: ["acceptedAwards"],
     queryFn: async () => {
