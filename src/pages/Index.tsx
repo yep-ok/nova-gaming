@@ -58,7 +58,6 @@ const Index = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      // Check for redirect parameter and navigate if user is logged in
       const redirectTo = searchParams.get("redirect");
       if (session && redirectTo) {
         navigate(redirectTo);
@@ -69,7 +68,6 @@ const Index = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      // Check for redirect parameter and navigate if user is logged in
       const redirectTo = searchParams.get("redirect");
       if (session && redirectTo) {
         navigate(redirectTo);
@@ -93,18 +91,18 @@ const Index = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-[#F3F3F3]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center px-4"
+          className="text-center px-4 max-w-2xl w-full"
         >
-          <h1 className="text-4xl font-light mb-4 text-foreground">
+          <h1 className="text-4xl font-light mb-4 text-[#222222]">
             Welcome to Nova Gaming
           </h1>
-          <p className="text-lg text-muted-foreground mb-8">
-            Please login to continue
+          <p className="text-lg text-[#555555] mb-8">
+            Join our community to participate in awards and discussions
           </p>
           <button
             onClick={() => supabase.auth.signInWithOAuth({
@@ -113,7 +111,7 @@ const Index = () => {
                 redirectTo: window.location.origin + (searchParams.get("redirect") ? `?redirect=${searchParams.get("redirect")}` : "")
               }
             })}
-            className="bg-[#5865F2] text-white px-6 py-2 rounded-md hover:bg-[#4752C4] transition-colors"
+            className="bg-[#FF4500] text-white px-8 py-3 rounded-full hover:bg-[#FF5722] transition-colors font-semibold text-lg"
           >
             Login with Discord
           </button>
@@ -123,29 +121,33 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-background">
+    <div className="min-h-screen p-8 bg-[#F3F3F3]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-light text-foreground">Nova Gaming</h1>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2" />
+          <h1 className="text-3xl font-medium text-[#222222]">Nova Gaming</h1>
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="text-[#555555] hover:text-[#222222] hover:bg-[#E5E5E5]"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
             Sign out
           </Button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link to="/awards">
-            <Card className="hover:bg-accent transition-colors cursor-pointer">
+            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white">
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
-                  <Award className="h-6 w-6" />
-                  <CardTitle>Awards</CardTitle>
+                  <Award className="h-6 w-6 text-[#FF4500]" />
+                  <CardTitle className="text-[#222222]">Awards</CardTitle>
                 </div>
-                <CardDescription>
+                <CardDescription className="text-[#555555]">
                   {latestAward?.name || "No awards yet"}
                 </CardDescription>
               </CardHeader>
@@ -153,13 +155,13 @@ const Index = () => {
           </Link>
 
           <Link to="/messages">
-            <Card className="hover:bg-accent transition-colors cursor-pointer">
+            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white">
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="h-6 w-6" />
-                  <CardTitle>Messages</CardTitle>
+                  <MessageSquare className="h-6 w-6 text-[#FF4500]" />
+                  <CardTitle className="text-[#222222]">Messages</CardTitle>
                 </div>
-                <CardDescription>
+                <CardDescription className="text-[#555555]">
                   {latestMessage?.content || "No messages yet"}
                 </CardDescription>
               </CardHeader>
