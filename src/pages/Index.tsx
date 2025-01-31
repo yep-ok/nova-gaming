@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, MessageSquare, LogOut } from "lucide-react";
+import { Award, MessageSquare, LogOut, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +24,18 @@ const fetchLatestAward = async () => {
 const fetchLatestMessage = async () => {
   const { data, error } = await supabase
     .from("messages")
+    .select("content")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+const fetchLatestFeatureRequest = async () => {
+  const { data, error } = await supabase
+    .from("feature_requests")
     .select("content")
     .order("created_at", { ascending: false })
     .limit(1)
@@ -95,6 +107,12 @@ const Index = () => {
   const { data: latestMessage } = useQuery({
     queryKey: ["latestMessage"],
     queryFn: fetchLatestMessage,
+    enabled: !!session,
+  });
+
+  const { data: latestFeatureRequest } = useQuery({
+    queryKey: ["latestFeatureRequest"],
+    queryFn: fetchLatestFeatureRequest,
     enabled: !!session,
   });
 
@@ -173,6 +191,20 @@ const Index = () => {
                 </div>
                 <CardDescription className="text-sm md:text-base text-[#555555]">
                   {latestMessage?.content || "No messages yet"}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Link to="/feature-requests" className="block">
+            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white h-full">
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  <Star className="h-5 md:h-6 w-5 md:w-6 text-[#FF4500]" />
+                  <CardTitle className="text-lg md:text-xl text-[#222222]">Feature Requests</CardTitle>
+                </div>
+                <CardDescription className="text-sm md:text-base text-[#555555]">
+                  {latestFeatureRequest?.content || "No feature requests yet"}
                 </CardDescription>
               </CardHeader>
             </Card>

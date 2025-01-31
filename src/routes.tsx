@@ -5,6 +5,7 @@ import Index from "./pages/Index";
 import Awards from "./pages/Awards";
 import Messages from "./pages/Messages";
 import SuggestedAwards from "./pages/SuggestedAwards";
+import FeatureRequests from "./pages/FeatureRequests";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <SuggestedAwards />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/feature-requests"
+        element={
+          <ProtectedRoute>
+            <FeatureRequests />
           </ProtectedRoute>
         }
       />
