@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Home, Award, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +25,16 @@ export default function SuggestedAwards() {
   const [newAwardDescription, setNewAwardDescription] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Check authentication
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    },
+  });
 
   // Fetch suggested awards
   const { data: suggestedAwards } = useQuery({
@@ -56,15 +66,17 @@ export default function SuggestedAwards() {
   // Create new award mutation
   const createAwardMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!session?.user) {
+        navigate("/auth");
+        throw new Error("Not authenticated");
+      }
 
       const { error } = await supabase
         .from("awards")
         .insert({
           name: newAwardName,
           description: newAwardDescription,
-          created_by: user.id,
+          created_by: session.user.id,
           status: "suggested"
         });
 
@@ -81,11 +93,19 @@ export default function SuggestedAwards() {
       });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to suggest award. Please try again.",
-        variant: "destructive",
-      });
+      if (error.message === "Not authenticated") {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to suggest awards.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to suggest award. Please try again.",
+          variant: "destructive",
+        });
+      }
       console.error("Error creating award:", error);
     },
   });
@@ -93,14 +113,16 @@ export default function SuggestedAwards() {
   // Vote for award mutation
   const voteForAwardMutation = useMutation({
     mutationFn: async (awardId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!session?.user) {
+        navigate("/auth");
+        throw new Error("Not authenticated");
+      }
 
       const { error } = await supabase
         .from("award_votes")
         .insert({
           award_id: awardId,
-          voter_id: user.id,
+          voter_id: session.user.id,
         });
 
       if (error) throw error;
@@ -113,11 +135,19 @@ export default function SuggestedAwards() {
       });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to record vote. Please try again.",
-        variant: "destructive",
-      });
+      if (error.message === "Not authenticated") {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to vote for awards.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to record vote. Please try again.",
+          variant: "destructive",
+        });
+      }
       console.error("Error voting for award:", error);
     },
   });
