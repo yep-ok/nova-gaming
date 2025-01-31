@@ -44,21 +44,20 @@ export function AwardCard({
   onNominate,
   onVote,
 }: AwardCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isExpanded && cardRef.current) {
-      const yOffset = -20; // Add some padding at the top
-      const element = cardRef.current;
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
+    if (isExpanded && headerRef.current) {
+      const element = headerRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   }, [isExpanded]);
 
   return (
-    <Card className="overflow-hidden" ref={cardRef}>
+    <Card className="overflow-hidden">
       <CardHeader
+        ref={headerRef}
         className="cursor-pointer"
         onClick={onToggleExpand}
       >
