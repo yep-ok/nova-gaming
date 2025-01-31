@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, MessageSquare } from "lucide-react";
+import { Award, MessageSquare, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const fetchLatestAward = async () => {
   const { data, error } = await supabase
@@ -33,6 +35,24 @@ const fetchLatestMessage = async () => {
 const Index = () => {
   const [session, setSession] = useState<any>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+      navigate("/");
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -98,7 +118,13 @@ const Index = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-4xl font-light mb-8 text-foreground">Nova Gaming</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-light text-foreground">Nova Gaming</h1>
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="mr-2" />
+            Sign out
+          </Button>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link to="/awards">

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Home } from "lucide-react";
+import { Home, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,24 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+      navigate("/");
+    }
+  };
 
   // Fetch messages
   const { data: messages } = useQuery({
@@ -97,6 +115,10 @@ export default function Messages() {
             <Home className="mr-2" />
             Home
           </Link>
+        </Button>
+        <Button variant="outline" onClick={handleLogout}>
+          <LogOut className="mr-2" />
+          Sign out
         </Button>
       </div>
 
