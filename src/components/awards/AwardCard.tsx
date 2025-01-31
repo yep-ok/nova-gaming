@@ -53,15 +53,17 @@ export function AwardCard({
         onClick={onToggleExpand}
       >
         <div className="flex items-center justify-between">
-          <CardTitle>{award.name}</CardTitle>
+          <div className="space-y-1.5">
+            <CardTitle>{award.name}</CardTitle>
+            <CardDescription>{award.description}</CardDescription>
+            {topNominee && (
+              <CardDescription className="font-medium text-primary">
+                Leading: {topNominee.nominee.discord_username} ({topNominee._count.votes} votes)
+              </CardDescription>
+            )}
+          </div>
           {isExpanded ? <ChevronUp /> : <ChevronDown />}
         </div>
-        <CardDescription>{award.description}</CardDescription>
-        {topNominee && (
-          <CardDescription className="mt-2 font-medium text-primary">
-            Leading: {topNominee.nominee.discord_username} ({topNominee._count.votes} votes)
-          </CardDescription>
-        )}
       </CardHeader>
 
       <AnimatePresence>
