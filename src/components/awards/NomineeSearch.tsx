@@ -26,16 +26,16 @@ export function NomineeSearch({
         placeholder="Search users to nominate..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="pl-9"
+        className="pl-9 bg-white border-[#E5E7EB] focus:border-[#FF4500] focus:ring-[#FF4500]"
       />
       {searchQuery && availableUsers && availableUsers.length > 0 && (
-        <Card className="absolute w-full mt-1 z-10">
+        <Card className="absolute w-full mt-1 z-10 border-[#E5E7EB]">
           <CardContent className="p-2">
             {availableUsers.map((user) => (
               <Button
                 key={user.id}
                 variant="ghost"
-                className="w-full justify-start"
+                className="w-full justify-start text-[#1A1F2C] hover:bg-[#FF4500]/10"
                 onClick={() => onNominate(user.id)}
               >
                 {user.discord_username}

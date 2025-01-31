@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { NomineeSearch } from "./NomineeSearch";
 import { NomineeList } from "./NomineeList";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AwardCardProps {
   award: {
@@ -43,17 +44,21 @@ export function AwardCard({
   onNominate,
   onVote,
 }: AwardCardProps) {
+  const isMobile = useIsMobile();
+
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden transition-all hover:shadow-md">
       <CardHeader
-        className="cursor-pointer"
+        className="cursor-pointer hover:bg-accent/50"
         onClick={onToggleExpand}
       >
-        <div className="flex items-center justify-between">
-          <CardTitle>{award.name}</CardTitle>
-          {isExpanded ? <ChevronUp /> : <ChevronDown />}
+        <div className="flex items-center justify-between gap-4">
+          <CardTitle className={`${isMobile ? 'text-lg' : 'text-2xl'} text-[#1A1F2C]`}>
+            {award.name}
+          </CardTitle>
+          {isExpanded ? <ChevronUp className="text-muted-foreground" /> : <ChevronDown className="text-muted-foreground" />}
         </div>
-        <CardDescription>{award.description}</CardDescription>
+        <CardDescription className="text-[#8E9196]">{award.description}</CardDescription>
       </CardHeader>
 
       <AnimatePresence>
@@ -65,7 +70,7 @@ export function AwardCard({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4">
               <NomineeSearch
                 searchQuery={searchQuery}
                 onSearchChange={onSearchChange}
