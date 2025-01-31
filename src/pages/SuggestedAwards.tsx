@@ -56,15 +56,15 @@ export default function SuggestedAwards() {
   // Create new award mutation
   const createAwardMutation = useMutation({
     mutationFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
       const { error } = await supabase
         .from("awards")
         .insert({
           name: newAwardName,
           description: newAwardDescription,
-          created_by: user.user.id,
+          created_by: user.id,
           status: "suggested"
         });
 
@@ -80,19 +80,27 @@ export default function SuggestedAwards() {
         description: "Your award has been successfully suggested.",
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to suggest award. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error creating award:", error);
+    },
   });
 
   // Vote for award mutation
   const voteForAwardMutation = useMutation({
     mutationFn: async (awardId: string) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
       const { error } = await supabase
         .from("award_votes")
         .insert({
           award_id: awardId,
-          voter_id: user.user.id,
+          voter_id: user.id,
         });
 
       if (error) throw error;
@@ -104,7 +112,28 @@ export default function SuggestedAwards() {
         description: "Your vote has been successfully recorded.",
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to record vote. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error voting for award:", error);
+    },
   });
+
+  const handleSubmitAward = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAwardName || !newAwardDescription) {
+      toast({
+        title: "Error",
+        description: "Please fill in both name and description.",
+        variant: "destructive",
+      });
+      return;
+    }
+    createAwardMutation.mutate();
+  };
 
   return (
     <div className="container py-8 space-y-6">
@@ -148,28 +177,30 @@ export default function SuggestedAwards() {
                   <X className="h-4 w-4" />
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Award name"
-                    value={newAwardName}
-                    onChange={(e) => setNewAwardName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="Award description"
-                    value={newAwardDescription}
-                    onChange={(e) => setNewAwardDescription(e.target.value)}
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => createAwardMutation.mutate()}
-                  disabled={!newAwardName || !newAwardDescription}
-                >
-                  Submit Award
-                </Button>
+              <CardContent>
+                <form onSubmit={handleSubmitAward} className="space-y-4">
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Award name"
+                      value={newAwardName}
+                      onChange={(e) => setNewAwardName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Award description"
+                      value={newAwardDescription}
+                      onChange={(e) => setNewAwardDescription(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={!newAwardName || !newAwardDescription || createAwardMutation.isPending}
+                  >
+                    Submit Award
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </motion.div>
