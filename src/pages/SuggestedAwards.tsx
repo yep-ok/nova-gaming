@@ -48,7 +48,8 @@ export default function SuggestedAwards() {
           description,
           award_votes(count)
         `)
-        .eq("status", "suggested");
+        .eq("status", "suggested")
+        .order('created_at', { ascending: false });
 
       if (awardsError) throw awardsError;
 
