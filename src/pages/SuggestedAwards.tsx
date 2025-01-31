@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence } from "framer-motion";
@@ -33,6 +33,39 @@ export default function SuggestedAwards() {
       return session;
     },
   });
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    // Subscribe to awards changes
+    const awardsChannel = supabase
+      .channel('suggested-awards-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'awards' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["suggestedAwards"] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to award votes changes
+    const awardVotesChannel = supabase
+      .channel('suggested-award-votes-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'award_votes' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["suggestedAwards"] });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions
+    return () => {
+      supabase.removeChannel(awardsChannel);
+      supabase.removeChannel(awardVotesChannel);
+    };
+  }, [queryClient]);
 
   // Fetch suggested awards and user votes
   const { data: suggestedAwards } = useQuery({
