@@ -81,14 +81,14 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
     }
 
     // Check for duplicate award name locally
-    const isDuplicate = existingAwards?.some(
+    const existingAward = existingAwards?.find(
       award => award.name.toLowerCase() === newAwardName.toLowerCase()
     );
 
-    if (isDuplicate) {
+    if (existingAward) {
       toast({
-        title: "Error",
-        description: "An award with this name already exists. Please choose a different name.",
+        title: "Duplicate Award Name",
+        description: `An award called "${existingAward.name}" already exists. Please choose a different name for your award.`,
         variant: "destructive",
       });
       return;
