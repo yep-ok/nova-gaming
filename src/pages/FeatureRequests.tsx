@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, ThumbsUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,7 +53,7 @@ export default function FeatureRequests() {
   });
 
   // Fetch feature requests
-  const { data: featureRequests } = useQuery({
+  const { data: featureRequests = [] } = useQuery<FeatureRequest[]>({
     queryKey: ["featureRequests"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -83,10 +83,10 @@ export default function FeatureRequests() {
 
       const votedIds = new Set(votes?.map(v => v.feature_request_id));
 
-      return data.map(request => ({
+      return (data as FeatureRequest[]).map(request => ({
         ...request,
         has_voted: votedIds.has(request.id)
-      })) as FeatureRequest[];
+      }));
     },
   });
 
