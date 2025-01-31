@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Award, Search, Home, ChevronDown, ChevronUp } from "lucide-react";
+import { Award, Search, Home, ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ interface NomineeData {
   _count: {
     votes: number;
   };
+  has_voted?: boolean;
 }
 
 interface UserData {
@@ -57,6 +58,7 @@ export default function Awards() {
     queryFn: async () => {
       if (!expandedAward) return null;
 
+      const { data: user } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("nominees")
         .select(`
@@ -68,19 +70,28 @@ export default function Awards() {
 
       if (error) throw error;
 
+      // Get user's votes
+      const { data: userVotes } = await supabase
+        .from("nominee_votes")
+        .select("nominee_id")
+        .eq("voter_id", user.user?.id || '');
+
+      const userVotedNominees = new Set(userVotes?.map(vote => vote.nominee_id));
+
       // Transform the data to match NomineeData interface
       return data?.map(nominee => ({
         id: nominee.id,
         nominee: nominee.nominee,
         _count: {
           votes: nominee.nominee_votes?.[0]?.count || 0
-        }
+        },
+        has_voted: userVotedNominees.has(nominee.id)
       })) as NomineeData[];
     },
     enabled: !!expandedAward,
   });
 
-  // Fetch available users for nomination (not yet nominated for this award)
+  // Fetch available users for nomination
   const { data: availableUsers } = useQuery({
     queryKey: ["availableUsers", expandedAward, searchQuery],
     queryFn: async () => {
@@ -97,7 +108,8 @@ export default function Awards() {
         .from("profiles")
         .select("id, discord_username")
         .ilike("discord_username", `%${searchQuery}%`)
-        .not("id", "in", `(${nominatedIds.join(",")})`);
+        .not("id", "in", `(${nominatedIds.join(",")})`)
+        .limit(5);
 
       if (error) throw error;
       return data as UserData[];
@@ -105,72 +117,47 @@ export default function Awards() {
     enabled: !!expandedAward && searchQuery.length > 0,
   });
 
-  // Check if the current user has voted
-  const { data: userVote } = useQuery({
-    queryKey: ["userVote", expandedAward],
-    queryFn: async () => {
-      if (!expandedAward) return null;
-
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return null;
-
-      const { data, error } = await supabase
-        .from("nominee_votes")
-        .select("nominee_id")
-        .eq("voter_id", user.user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data?.nominee_id;
-    },
-    enabled: !!expandedAward,
-  });
-
   // Mutation to vote for a nominee
   const voteMutation = useMutation({
-    mutationFn: async (nomineeId: string) => {
+    mutationFn: async ({ nomineeId, isVoting }: { nomineeId: string; isVoting: boolean }) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
 
-      const { error } = await supabase
-        .from("nominee_votes")
-        .insert({
-          nominee_id: nomineeId,
-          voter_id: user.user.id,
-        });
+      if (isVoting) {
+        const { error } = await supabase
+          .from("nominee_votes")
+          .insert({
+            nominee_id: nomineeId,
+            voter_id: user.user.id,
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("nominee_votes")
+          .delete()
+          .eq("nominee_id", nomineeId)
+          .eq("voter_id", user.user.id);
+
+        if (error) throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, { isVoting }) => {
       queryClient.invalidateQueries({ queryKey: ["nominees"] });
-      queryClient.invalidateQueries({ queryKey: ["userVote"] });
       toast({
-        title: "Vote recorded",
-        description: "Your vote has been successfully recorded.",
+        title: isVoting ? "Vote recorded" : "Vote removed",
+        description: isVoting 
+          ? "Your vote has been successfully recorded."
+          : "Your vote has been successfully removed.",
       });
     },
-  });
-
-  // Mutation to remove a vote
-  const unvoteMutation = useMutation({
-    mutationFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
-
-      const { error } = await supabase
-        .from("nominee_votes")
-        .delete()
-        .eq("voter_id", user.user.id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nominees"] });
-      queryClient.invalidateQueries({ queryKey: ["userVote"] });
+    onError: (error) => {
       toast({
-        title: "Vote removed",
-        description: "Your vote has been successfully removed.",
+        title: "Error",
+        description: "Failed to process vote. Please try again.",
+        variant: "destructive",
       });
+      console.error("Error processing vote:", error);
     },
   });
 
@@ -273,24 +260,29 @@ export default function Awards() {
                         <Card
                           key={nominee.id}
                           className={`cursor-pointer transition-colors ${
-                            userVote === nominee.id ? "bg-accent" : ""
+                            nominee.has_voted 
+                              ? "bg-accent/50 hover:bg-accent/60" 
+                              : "hover:bg-accent"
                           }`}
-                          onClick={() => {
-                            if (userVote === nominee.id) {
-                              unvoteMutation.mutate();
-                            } else if (!userVote) {
-                              voteMutation.mutate(nominee.id);
-                            }
-                          }}
+                          onClick={() => voteMutation.mutate({ 
+                            nomineeId: nominee.id, 
+                            isVoting: !nominee.has_voted 
+                          })}
                         >
                           <CardHeader>
                             <div className="flex items-center justify-between">
                               <CardTitle className="text-lg">
                                 {nominee.nominee.discord_username}
                               </CardTitle>
-                              <CardDescription>
-                                {nominee._count.votes} votes
-                              </CardDescription>
+                              <div className="flex items-center gap-2">
+                                <CardDescription>
+                                  {nominee._count.votes} votes
+                                </CardDescription>
+                                <ThumbsUp 
+                                  className={nominee.has_voted ? "text-primary" : "text-muted-foreground"} 
+                                  size={16}
+                                />
+                              </div>
                             </div>
                           </CardHeader>
                         </Card>
