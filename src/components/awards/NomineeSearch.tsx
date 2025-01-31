@@ -43,8 +43,7 @@ export function NomineeSearch({
     setIsOpen(false);
   };
 
-  const showSuggestions = isOpen && availableUsers && availableUsers.length > 0 && 
-    (searchQuery || document.activeElement === containerRef.current?.querySelector('input'));
+  const showSuggestions = isOpen && availableUsers && availableUsers.length > 0;
 
   return (
     <div className="relative" ref={containerRef}>
@@ -58,7 +57,7 @@ export function NomineeSearch({
       />
       {showSuggestions && (
         <Card className="absolute w-full mt-1 z-10 border-[#E5E7EB]">
-          <CardContent className="p-2 max-h-[240px] overflow-y-auto">
+          <CardContent className="p-2">
             <div className="space-y-1">
               {availableUsers.map((user) => (
                 <Button
