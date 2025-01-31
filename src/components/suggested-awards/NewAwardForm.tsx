@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, Plus } from "lucide-react";
+import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -46,11 +46,21 @@ export function NewAwardForm({ showForm, onClose, userId }: NewAwardFormProps) {
     },
     onError: (error) => {
       if (error instanceof Error) {
-        toast({
-          title: "Error",
-          description: "Failed to suggest award. Please try again.",
-          variant: "destructive",
-        });
+        // Check for unique constraint violation
+        const message = (error as any).message;
+        if (message && message.includes('unique constraint "unique_award_name"')) {
+          toast({
+            title: "Error",
+            description: "An award with this name already exists. Please choose a different name.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to suggest award. Please try again.",
+            variant: "destructive",
+          });
+        }
         console.error("Error creating award:", error);
       }
     },
