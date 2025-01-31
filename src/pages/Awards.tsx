@@ -10,6 +10,8 @@ interface AwardData {
   id: string;
   name: string;
   description: string;
+  created_at: string;
+  accepted_at: string | null;
 }
 
 interface NomineeData {
@@ -51,15 +53,15 @@ export default function Awards() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("awards")
-        .select("id, name, description")
-        .eq("status", "accepted");
+        .select("id, name, description, created_at, accepted_at")
+        .eq("status", "accepted")
+        .order('accepted_at', { ascending: false, nullsLast: true });
 
       if (error) throw error;
       return data as AwardData[];
     },
   });
 
-  // Fetch nominees for an award
   const { data: nominees } = useQuery({
     queryKey: ["nominees", expandedAward],
     queryFn: async () => {
@@ -99,7 +101,6 @@ export default function Awards() {
     enabled: !!expandedAward,
   });
 
-  // Fetch available users for nomination
   const { data: availableUsers } = useQuery({
     queryKey: ["availableUsers", expandedAward, searchQuery],
     queryFn: async () => {
@@ -125,7 +126,6 @@ export default function Awards() {
     enabled: !!expandedAward && searchQuery.length > 0,
   });
 
-  // Check if user has already voted for this award
   const checkExistingVote = async (awardId: string) => {
     if (!session?.user) return false;
 
@@ -138,7 +138,6 @@ export default function Awards() {
     return existingVotes && existingVotes.length > 0;
   };
 
-  // Mutation to vote for a nominee
   const voteMutation = useMutation({
     mutationFn: async ({ nomineeId, isVoting }: { nomineeId: string; isVoting: boolean }) => {
       if (!session?.user) {
@@ -204,7 +203,6 @@ export default function Awards() {
     },
   });
 
-  // Mutation to nominate a new user
   const nominateMutation = useMutation({
     mutationFn: async (userId: string) => {
       if (!session?.user) {

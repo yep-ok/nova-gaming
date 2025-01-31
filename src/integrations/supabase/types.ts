@@ -45,41 +45,46 @@ export type Database = {
           },
         ]
       }
-      awards: {
-        Row: {
-          created_at: string
-          created_by: string
-          description: string
-          id: string
-          name: string
-          status: Database["public"]["Enums"]["award_status"]
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          description: string
-          id?: string
-          name: string
-          status?: Database["public"]["Enums"]["award_status"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          description?: string
-          id?: string
-          name?: string
-          status?: Database["public"]["Enums"]["award_status"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "awards_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
+awards: {
+  Row: {
+    created_at: string
+    created_by: string
+    description: string
+    id: string
+    name: string
+    status: Database["public"]["Enums"]["award_status"]
+    accepted_at: string | null
+  }
+  Insert: {
+    created_at?: string
+    created_by: string
+    description: string
+    id?: string
+    name: string
+    status?: Database["public"]["Enums"]["award_status"]
+    accepted_at?: string | null
+  }
+  Update: {
+    created_at?: string
+    created_by?: string
+    description?: string
+    id?: string
+    name?: string
+    status?: Database["public"]["Enums"]["award_status"]
+    accepted_at?: string | null
+  }
+  Relationships: [
+    {
+      foreignKeyName: "awards_created_by_fkey"
+      columns: ["created_by"]
+      isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+  ]
+}
+
       messages: {
         Row: {
           author_id: string
@@ -314,3 +319,4 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
