@@ -49,6 +49,8 @@ const Bank = () => {
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
+      if (!currentUser?.id) return [];
+
       const { data, error } = await supabase
         .from("profiles")
         .select("id, discord_username");
@@ -57,7 +59,7 @@ const Bank = () => {
       
       // Filter out current user and clean up usernames
       return data
-        .filter(user => user.id !== currentUser?.id)
+        .filter(user => user.id !== currentUser.id)
         .map(user => ({
           ...user,
           discord_username: user.discord_username.replace(/#0$/, '')
@@ -266,7 +268,7 @@ const Bank = () => {
                     <CommandInput placeholder="Search users..." />
                     <CommandEmpty>No user found.</CommandEmpty>
                     <CommandGroup>
-                      {users.map((user) => (
+                      {users?.map((user) => (
                         <CommandItem
                           key={user.id}
                           onSelect={() => {
