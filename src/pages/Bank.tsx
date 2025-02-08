@@ -29,7 +29,7 @@ const Bank = () => {
   const [action, setAction] = useState<"send" | "request">("send");
   const [open, setOpen] = useState(false);
 
-  const { data: currentUser } = useQuery({
+  const { data: currentUser, isLoading: isLoadingCurrentUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -46,25 +46,30 @@ const Bank = () => {
     },
   });
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, discord_username")
-        .neq("id", currentUser?.id);
+        .select("id, discord_username");
 
       if (error) throw error;
-      return data.map(user => ({
-        ...user,
-        discord_username: user.discord_username.replace(/#0$/, '')
-      }));
+      
+      // Filter out current user and clean up usernames
+      return data
+        .filter(user => user.id !== currentUser?.id)
+        .map(user => ({
+          ...user,
+          discord_username: user.discord_username.replace(/#0$/, '')
+        }));
     },
-    enabled: !!currentUser,
+    enabled: !!currentUser, // Only fetch users when we have the current user
   });
 
   // Set up real-time subscription for balance updates
   useEffect(() => {
+    if (!currentUser?.id) return;
+
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -73,7 +78,7 @@ const Bank = () => {
           event: '*',
           schema: 'public',
           table: 'profiles',
-          filter: `id=eq.${currentUser?.id}`
+          filter: `id=eq.${currentUser.id}`
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["currentUser"] });
@@ -85,7 +90,7 @@ const Bank = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'money_requests',
-          filter: `requested_from_id=eq.${currentUser?.id}`
+          filter: `requested_from_id=eq.${currentUser.id}`
         },
         (payload) => {
           const requester = users.find(u => u.id === payload.new.requester_id);
@@ -188,6 +193,16 @@ const Bank = () => {
       });
     }
   };
+
+  if (isLoadingCurrentUser || isLoadingUsers) {
+    return (
+      <div className="min-h-screen p-4 md:p-8 bg-[#F3F3F3]">
+        <div className="max-w-2xl mx-auto">
+          <p className="text-center">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-8 bg-[#F3F3F3]">
@@ -302,4 +317,3 @@ const Bank = () => {
 };
 
 export default Bank;
-
