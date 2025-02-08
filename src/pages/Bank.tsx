@@ -1,17 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send, HandCoins } from "lucide-react";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft } from "lucide-react";
+import BalanceCard from "@/components/bank/BalanceCard";
+import TransactionForm from "@/components/bank/TransactionForm";
 
 interface User {
   id: string;
@@ -27,7 +23,6 @@ const Bank = () => {
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
   const [action, setAction] = useState<"send" | "request">("send");
-  const [open, setOpen] = useState(false);
 
   const { data: currentUser, isLoading: isLoadingCurrentUser } = useQuery({
     queryKey: ["currentUser"],
@@ -57,7 +52,6 @@ const Bank = () => {
 
       if (error) throw error;
       
-      // Filter out current user and clean up usernames
       return data
         .filter(user => user.id !== currentUser.id)
         .map(user => ({
@@ -65,10 +59,9 @@ const Bank = () => {
           discord_username: user.discord_username.replace(/#0$/, '')
         }));
     },
-    enabled: !!currentUser, // Only fetch users when we have the current user
+    enabled: !!currentUser,
   });
 
-  // Set up real-time subscription for balance updates
   useEffect(() => {
     if (!currentUser?.id) return;
 
@@ -133,7 +126,6 @@ const Bank = () => {
         return;
       }
 
-      // Find recipient
       const { data: recipient, error: recipientError } = await supabase
         .from("profiles")
         .select("id, discord_username")
@@ -183,7 +175,6 @@ const Bank = () => {
         });
       }
 
-      // Reset form
       setRecipientUsername("");
       setAmount("");
       setMessage("");
@@ -218,101 +209,21 @@ const Bank = () => {
       </Button>
 
       <div className="max-w-2xl mx-auto">
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-2xl text-[#222222]">Bank</CardTitle>
-            <CardDescription className="text-lg text-[#555555]">
-              Balance: ${currentUser?.balance?.toFixed(2) || "0.00"}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex gap-4 mb-4">
-              <Button
-                variant={action === "send" ? "default" : "outline"}
-                onClick={() => setAction("send")}
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Send Money
-              </Button>
-              <Button
-                variant={action === "request" ? "default" : "outline"}
-                onClick={() => setAction("request")}
-              >
-                <HandCoins className="mr-2 h-4 w-4" />
-                Request Money
-              </Button>
-            </div>
-            <CardTitle className="text-xl text-[#222222]">
-              {action === "send" ? "Send Money" : "Request Money"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="recipient">Recipient's Username</Label>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    className="w-full justify-between"
-                  >
-                    {recipientUsername || "Select a user..."}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
-                  <Command>
-                    <CommandInput placeholder="Search users..." />
-                    <CommandEmpty>No user found.</CommandEmpty>
-                    <CommandGroup>
-                      {users?.map((user) => (
-                        <CommandItem
-                          key={user.id}
-                          onSelect={() => {
-                            setRecipientUsername(user.discord_username);
-                            setOpen(false);
-                          }}
-                        >
-                          {user.discord_username}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount ($)</Label>
-              <Input
-                id="amount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Message (optional)</Label>
-              <Textarea
-                id="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Add a message..."
-              />
-            </div>
-            <Button
-              className="w-full"
-              onClick={handleTransaction}
-            >
-              {action === "send" ? "Send Money" : "Request Money"}
-            </Button>
-          </CardContent>
-        </Card>
+        <BalanceCard balance={currentUser?.balance || 0} />
+        
+        <TransactionForm
+          users={users}
+          isLoadingUsers={isLoadingUsers}
+          recipientUsername={recipientUsername}
+          amount={amount}
+          message={message}
+          action={action}
+          onActionChange={setAction}
+          onRecipientChange={setRecipientUsername}
+          onAmountChange={setAmount}
+          onMessageChange={setMessage}
+          onSubmit={handleTransaction}
+        />
       </div>
     </div>
   );
