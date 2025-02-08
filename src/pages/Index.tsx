@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, MessageSquare, LogOut, Star } from "lucide-react";
+import { Award, MessageSquare, LogOut, Star, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -40,6 +40,20 @@ const fetchLatestFeatureRequest = async () => {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+const fetchUserBalance = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+  
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("balance")
+    .eq("id", session.user.id)
+    .single();
 
   if (error) throw error;
   return data;
@@ -116,6 +130,12 @@ const Index = () => {
     enabled: !!session,
   });
 
+  const { data: userBalance } = useQuery({
+    queryKey: ["userBalance"],
+    queryFn: fetchUserBalance,
+    enabled: !!session,
+  });
+
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F3F3F3] px-4">
@@ -168,6 +188,20 @@ const Index = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <Link to="/bank" className="block">
+            <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white h-full">
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  <Wallet className="h-5 md:h-6 w-5 md:w-6 text-[#FF4500]" />
+                  <CardTitle className="text-lg md:text-xl text-[#222222]">Bank</CardTitle>
+                </div>
+                <CardDescription className="text-sm md:text-base text-[#555555]">
+                  Balance: ${userBalance?.balance?.toFixed(2) || "0.00"}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
           <Link to="/awards" className="block">
             <Card className="hover:border-[#FF4500] hover:shadow-md transition-all duration-200 bg-white h-full">
               <CardHeader>

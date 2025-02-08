@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +7,7 @@ import Awards from "./pages/Awards";
 import Messages from "./pages/Messages";
 import SuggestedAwards from "./pages/SuggestedAwards";
 import FeatureRequests from "./pages/FeatureRequests";
+import Bank from "./pages/Bank";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -58,6 +60,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <FeatureRequests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/bank"
+        element={
+          <ProtectedRoute>
+            <Bank />
           </ProtectedRoute>
         }
       />
