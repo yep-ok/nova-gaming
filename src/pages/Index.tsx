@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Award, MessageSquare, LogOut, Star, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -66,6 +66,7 @@ const Index = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     try {
@@ -135,6 +136,31 @@ const Index = () => {
     queryFn: fetchUserBalance,
     enabled: !!session,
   });
+
+  // Add real-time subscription for balance updates
+  useEffect(() => {
+    if (!session) return;
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${session.user.id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["userBalance"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session, queryClient]);
 
   if (!session) {
     return (

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Send, HandCoins } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface User {
   id: string;
@@ -20,10 +22,12 @@ interface User {
 const Bank = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [recipientUsername, setRecipientUsername] = useState("");
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
   const [action, setAction] = useState<"send" | "request">("send");
+  const [open, setOpen] = useState(false);
 
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
@@ -41,6 +45,65 @@ const Bank = () => {
       return data as User;
     },
   });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, discord_username")
+        .neq("id", currentUser?.id);
+
+      if (error) throw error;
+      return data.map(user => ({
+        ...user,
+        discord_username: user.discord_username.replace(/#0$/, '')
+      }));
+    },
+    enabled: !!currentUser,
+  });
+
+  // Set up real-time subscription for balance updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${currentUser?.id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'money_requests',
+          filter: `requested_from_id=eq.${currentUser?.id}`
+        },
+        (payload) => {
+          const requester = users.find(u => u.id === payload.new.requester_id);
+          if (requester) {
+            toast({
+              title: "New Money Request",
+              description: `${requester.discord_username} requested $${payload.new.amount}`,
+            });
+          }
+          queryClient.invalidateQueries({ queryKey: ["moneyRequests"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser?.id, queryClient, users, toast]);
 
   const handleTransaction = async () => {
     try {
@@ -67,7 +130,7 @@ const Bank = () => {
       const { data: recipient, error: recipientError } = await supabase
         .from("profiles")
         .select("id, discord_username")
-        .eq("discord_username", recipientUsername)
+        .eq("discord_username", recipientUsername + "#0")
         .single();
 
       if (recipientError || !recipient) {
@@ -130,7 +193,7 @@ const Bank = () => {
     <div className="min-h-screen p-4 md:p-8 bg-[#F3F3F3]">
       <Button
         variant="ghost"
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/")}
         className="mb-6"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -172,12 +235,37 @@ const Bank = () => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="recipient">Recipient's Username</Label>
-              <Input
-                id="recipient"
-                value={recipientUsername}
-                onChange={(e) => setRecipientUsername(e.target.value)}
-                placeholder="Enter Discord username"
-              />
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between"
+                  >
+                    {recipientUsername || "Select a user..."}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search users..." />
+                    <CommandEmpty>No user found.</CommandEmpty>
+                    <CommandGroup>
+                      {users.map((user) => (
+                        <CommandItem
+                          key={user.id}
+                          onSelect={() => {
+                            setRecipientUsername(user.discord_username);
+                            setOpen(false);
+                          }}
+                        >
+                          {user.discord_username}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="amount">Amount ($)</Label>
@@ -214,3 +302,4 @@ const Bank = () => {
 };
 
 export default Bank;
+
