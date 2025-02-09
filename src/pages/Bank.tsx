@@ -48,16 +48,15 @@ const Bank = () => {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, discord_username");
+        .select("id, discord_username")
+        .neq("id", currentUser.id);
 
       if (error) throw error;
       
-      return data
-        .filter(user => user.id !== currentUser.id)
-        .map(user => ({
-          ...user,
-          discord_username: user.discord_username.replace(/#0$/, '')
-        }));
+      return data.map(user => ({
+        ...user,
+        discord_username: user.discord_username.replace(/#0$/, '')
+      }));
     },
     enabled: !!currentUser,
   });

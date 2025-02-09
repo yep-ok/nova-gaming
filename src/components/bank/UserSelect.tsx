@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,16 @@ interface UserSelectProps {
 
 const UserSelect = ({ users, isLoading, selectedUsername, onSelect }: UserSelectProps) => {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -35,8 +45,8 @@ const UserSelect = ({ users, isLoading, selectedUsername, onSelect }: UserSelect
     );
   }
 
-  // Ensure users is an array before attempting to map
-  const safeUsers = Array.isArray(users) ? users : [];
+  // Ensure users is an array and contains valid data
+  const safeUsers = Array.isArray(users) ? users.filter(user => user && user.discord_username) : [];
 
   return (
     <div className="space-y-2">
