@@ -72,7 +72,7 @@ const Bank = () => {
           event: '*',
           schema: 'public',
           table: 'profiles',
-          filter: `id=eq.${currentUser.id}`
+          filter: `id=eq.${currentUser.id} AND column=balance`
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["currentUser"] });
