@@ -21,8 +21,22 @@ const UserSelect = ({ users, isLoading, selectedUsername, onSelect }: UserSelect
   const [open, setOpen] = useState(false);
 
   if (isLoading) {
-    return <div>Loading users...</div>;
+    return (
+      <div className="space-y-2">
+        <Label htmlFor="recipient">Recipient's Username</Label>
+        <Button
+          variant="outline"
+          className="w-full justify-between"
+          disabled
+        >
+          Loading users...
+        </Button>
+      </div>
+    );
   }
+
+  // Ensure users is an array before attempting to map
+  const safeUsers = Array.isArray(users) ? users : [];
 
   return (
     <div className="space-y-2">
@@ -43,7 +57,7 @@ const UserSelect = ({ users, isLoading, selectedUsername, onSelect }: UserSelect
             <CommandInput placeholder="Search users..." />
             <CommandEmpty>No user found.</CommandEmpty>
             <CommandGroup>
-              {users?.map((user) => (
+              {safeUsers.map((user) => (
                 <CommandItem
                   key={user.id}
                   onSelect={() => {
